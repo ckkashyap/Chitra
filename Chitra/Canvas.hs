@@ -13,10 +13,12 @@ import Data.Binary.Put
 import Data.Word
 
 import qualified RFB.Constants as RFB
+import qualified RFB.Server as SERVER
+import qualified RFB.Handshake as Handshake
 
 main :: IO ()
 main = do
-	running <- serveOne (Just $ UserWithDefaultGroup "ckk") server
+	running <- serveOne Nothing server
 	putStrLn "server is accepting connections!!!"
 	waitFor running
 
@@ -29,6 +31,12 @@ doVNC (h,n,p) = do
 			eventLoop h
 			
 
+
+start = do
+	SERVER.serve 100 100 "5900" dummy
+
+dummy w h hnd = Handshake.handshake hnd
+	
 
 startRFB :: Handle -> IO ()
 startRFB h = do
