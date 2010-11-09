@@ -1,4 +1,5 @@
--- file: ch27/syslogtcpserver.hs
+module RFB.Server (serve) where
+
 import Data.Bits
 import Network.Socket
 import Network.BSD
@@ -52,6 +53,4 @@ serve width height port handlerFunc = withSocketsDo $
 			 --mapM_ (handle lock clientaddr) (lines messages)
 			 handlerFunc width height connhdl
 			 hClose connhdl
-
-
 
