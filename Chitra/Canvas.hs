@@ -15,6 +15,7 @@ import Data.Word
 import qualified RFB.Constants as RFB
 import qualified RFB.Server as SERVER
 import qualified RFB.Handshake as Handshake
+import qualified RFB.CommandLoop as CommandLoop
 
 main :: IO ()
 main = do
@@ -35,7 +36,9 @@ doVNC (h,n,p) = do
 start = do
 	SERVER.serve 100 100 "5900" dummy
 
-dummy w h hnd = Handshake.handshake w h hnd
+dummy w h hnd = do
+	Handshake.handshake w h hnd
+	CommandLoop.commandLoop hnd
 	
 
 startRFB :: Handle -> IO ()

@@ -12,11 +12,20 @@ clientCutText                   = 6 :: Word8
 
 
 bytesToRead :: Word8 -> Int
-bytesToRead c = n - 1 where
-	n
-		| c == setPixelFormat	= 20
-		| c == setEncodings	= 4
-		| c == framebufferUpdateRequest = 10
-		| c == keyEvent 	= 8
-		| c == pointerEvent	= 6
-		| c == clientCutText	= 8 -- more based on the last byte
+bytesToRead c = length (commandFormat c) -- excluding the command byte
+
+
+
+commandFormat :: Word8 -> [Int] -- 0 for padding bytes
+commandFormat c
+		| c == setPixelFormat	= [0,0,0,1,1,1,1,2,2,2,1,1,1,0,0,0]
+		| c == setEncodings	= [0,2]
+		| c == framebufferUpdateRequest = [0,2,2,2,2]
+		| c == keyEvent 	= [1,2,4]
+		| c == pointerEvent	= [1,2,2]
+		| c == clientCutText	= [0,0,0,4]
+		| otherwise		= []
+
+
+--parseCommandByteString byteString command = 
+
