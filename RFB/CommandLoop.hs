@@ -15,8 +15,6 @@ commandLoop handle = do
 	commandByte <- BS.hGet handle 1
 	let command = runGet (do {x<-getWord8;return(x);}) commandByte
 	byteStream <- BS.hGet handle (RFBClient.bytesToRead command)
-	putStrLn (show command)
-	putStrLn (show (RFBClient.bytesToRead command))
 	let x = RFBClient.parseCommandByteString byteStream command
 	putStrLn (show x)
 	return ()
