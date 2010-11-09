@@ -35,7 +35,7 @@ doVNC (h,n,p) = do
 start = do
 	SERVER.serve 100 100 "5900" dummy
 
-dummy w h hnd = Handshake.handshake hnd
+dummy w h hnd = Handshake.handshake w h hnd
 	
 
 startRFB :: Handle -> IO ()

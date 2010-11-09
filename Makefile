@@ -2,4 +2,6 @@ all:
 	ghc --make Main
 
 clean:
-	rm -f {.,Chitra,RFB}/*.{o,hi}
+	@find . -name "*.hi" -exec rm -f {} \;
+	@find . -name "*.o" -exec rm -f {} \;
+	rm -f Main
