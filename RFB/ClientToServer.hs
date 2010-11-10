@@ -1,9 +1,8 @@
 module RFB.ClientToServer where
 
-import qualified Data.ByteString.Lazy as BS
-import Control.Applicative ((<$>))
 import Data.Word
-import Data.Binary.Get
+
+import qualified Utilities.ParseByteString as PBS
 
 
 -- Client to Server messages
@@ -32,31 +31,8 @@ commandFormat c
 		| otherwise		= []
 
 
-data Action m = A1 (m Word8) | A2 (m Word16) | A4 (m Word32)
-
-action 1 = A1 getWord8
-action 2 = A2 getWord16be
-action 4 = A4 getWord32be
-
-newtype Id a = Id a
-
-getAction :: Action Get -> Get (Action Id)
-getAction (A1 act) = A1 . Id <$> act 
-getAction (A2 act) = A2 . Id <$> act
-getAction (A4 act) = A4 . Id <$> act
-
-getActions :: [Action Get] -> Get [Action Id]
-getActions  = mapM getAction
-
-toVal (A1 (Id v)) = fromIntegral v :: Int
-toVal (A2 (Id v)) = fromIntegral v :: Int
-toVal (A4 (Id v)) = fromIntegral v :: Int
-
 parseCommandByteString byteString command =
-	zip list $ map toVal $ runGet (getActions actionList) byteString
+	PBS.parseByteString list byteString
 		where 
-			actionList = 
-				map action (map dingo list)
-			dingo x = if x == 0 then 1 else x
 			list = (commandFormat command)
 
