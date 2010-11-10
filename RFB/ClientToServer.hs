@@ -15,8 +15,7 @@ clientCutText                   = 6 :: Word8
 
 
 bytesToRead :: Word8 -> Int
-bytesToRead c = 19
---bytesToRead c = length (commandFormat c) -- excluding the command byte
+bytesToRead c = foldr (+) 0 (map (\x -> if x == 0 then 1 else x) (commandFormat c))
 
 
 
