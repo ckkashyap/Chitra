@@ -28,5 +28,8 @@ toVal (A1 (Id v)) = fromIntegral v :: Int
 toVal (A2 (Id v)) = fromIntegral v :: Int
 toVal (A4 (Id v)) = fromIntegral v :: Int
 
-parseByteString actionList byteString =
-	map toVal $ runGet (getActions (getActionList actionList)) byteString
+parseByteString list byteString = cleanup solution
+		where 
+			cleanup list1 = map snd . filter ((/= 0) . fst) $ zip list list1
+			solution = map toVal $ runGet actionList byteString
+			actionList = getActions (getActionList list)
