@@ -47,19 +47,28 @@ processSetEncodings handle [count] = do
 	return ()
 
 
-blueScreen :: BS.ByteString
-blueScreen = runPut $ do
+xxx 0 = return ()
+xxx n = do
+	putWord8 0 -- dummy
+	putWord8 0 -- red
+	putWord8 0 -- green
+	putWord8 255   -- blue
+	xxx (n-1)
+
+blueScreen :: Int -> Int -> Int -> Int -> BS.ByteString
+blueScreen x y width height = runPut $ do
 	putWord8 0
 	putWord8 0
 	putWord16be 1
-	putWord16be 0
-	putWord16be 0
-	putWord16be 100
-	putWord16be 100
+	putWord16be (fromIntegral x)
+	putWord16be (fromIntegral y)
+	putWord16be (fromIntegral width)
+	putWord16be (fromIntegral height)
 	putWord32be 0
+	xxx (width*height)
 	
 
 processFrameBufferUpdateRequest handle [x,y,width,height] = do
 	putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
-	BS.hPutStr handle blueScreen
+	BS.hPutStr handle (blueScreen x y width height)
 

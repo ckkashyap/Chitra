@@ -48,9 +48,9 @@ serverInitMessage width height = runPut $ do
 				putWord16be (255::Word16) -- red max
 				putWord16be (255::Word16) -- green max
 				putWord16be (255::Word16) -- blue max
-				putWord8 (24::Word8) -- red shift
-				putWord8 (1::Word8)  -- green shift
-				putWord8 (1::Word8)  -- blue shift
+				putWord8 (16::Word8) -- red shift
+				putWord8 (8::Word8)  -- green shift
+				putWord8 (0::Word8)  -- blue shift
 
 				--padding
 				putWord8 (0::Word8)
