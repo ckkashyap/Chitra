@@ -1,0 +1,5 @@
+To try out -
+
+just do a make and you should have the executable *Main* created. Run ./Main
+and try connecting a vnc client to localhost:5900 - typically, that would be
+vnc://localhost
