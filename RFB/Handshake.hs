@@ -8,30 +8,42 @@ import Data.Binary.Get
 import Data.Binary.Put
 import Data.Word
 
-handshake :: Int -> Int -> Handle -> IO ()
-handshake width height handle = do
-	hPutStrLn handle "RFB 003.003"
-	hFlush handle
+import Control.Monad.State
 
-	byteStream <- hGetLine handle
-	putStrLn ("Client Said :: " ++ (show byteStream))
+type MyState a = StateT Int IO a
+
+
+
+handshake :: Int -> Int -> Handle -> IO ()
+handshake w h hnd =  do
+	runStateT (handshake1 w h hnd) 0
+	return ()
+			
+
+handshake1 :: Int -> Int -> Handle -> MyState ()
+handshake1 width height handle = do
+	liftIO $ hPutStrLn handle "RFB 003.003"
+	liftIO $ hFlush handle
+
+	byteStream <- liftIO $ hGetLine handle
+	liftIO $ putStrLn ("Client Said :: " ++ (show byteStream))
 	let majorVersion = read $ (take 3).(drop 4) $ byteStream :: Int
-	if majorVersion /= 3 then fail ("Expected 3 but the Client sent " ++ (show majorVersion))
-		else return () -- contiue down the function
+	if majorVersion /= 3 then liftIO (fail ("Expected 3 but the Client sent " ++ (show majorVersion)))
+		else liftIO $ return () -- contiue down the function
 
 	-- Send 1 to the client, meaning, no auth required
-	BS.hPutStr handle (BS.pack [0,0,0,1])
-	hFlush handle
+	liftIO $ BS.hPutStr handle (BS.pack [0,0,0,1])
+	liftIO $ hFlush handle
 
-	clientInitMessage <- BS.hGet handle 1
+	clientInitMessage <- liftIO $ BS.hGet handle 1
 
 	let sharedOrNot = runGet (do {x<-getWord8;return(x);}) clientInitMessage
 
-	if sharedOrNot==1 then putStrLn "Sharing enabled"
-		else putStrLn "Sharing disabled"
+	if sharedOrNot==1 then liftIO $ putStrLn "Sharing enabled"
+		else liftIO $ putStrLn "Sharing disabled"
 
-	BS.hPutStr handle (serverInitMessage width height)
-	hFlush handle
+	liftIO $ BS.hPutStr handle (serverInitMessage width height)
+	liftIO $ hFlush handle
 
 
 
