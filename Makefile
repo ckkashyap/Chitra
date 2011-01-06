@@ -1,5 +1,5 @@
 all:
-	ghc --make Main
+	ghc -hide-package monads-fd --make Main
 
 clean:
 	@find . -name "*.hi" -exec rm -f {} \;

@@ -10,21 +10,37 @@ import Data.Word
 
 import qualified RFB.ClientToServer as RFBClient
 
+import Control.Monad.State
+
+type MyState a = StateT Int IO a
+
 commandLoop :: Handle -> IO ()
-commandLoop handle = do
-	commandByte <- BS.hGet handle 1
+commandLoop h = do
+	runStateT (commandLoop1 h) 0
+	return ()
+
+
+commandLoop1 :: Handle -> MyState ()
+commandLoop1 handle = do
+	commandByte <- liftIO$ BS.hGet handle 1
 	let command = runGet (do {x<-getWord8;return(x);}) commandByte
-	byteStream <- BS.hGet handle (RFBClient.bytesToRead command)
+	byteStream <- liftIO $ BS.hGet handle (RFBClient.bytesToRead command)
 	let commandData = RFBClient.parseCommandByteString byteStream command
 	case command of
-		0 -> processSetPixelFormat commandData
-		2 -> processSetEncodings handle commandData 
+		0 -> liftIO $ processSetPixelFormat commandData
+		2 -> liftIO $ processSetEncodings handle commandData 
 		3 -> processFrameBufferUpdateRequest handle commandData
-		_ -> putStrLn "Some other command"
+		5 -> processPointerEvent handle commandData
+		_ -> liftIO $ putStrLn "Some other command"
 	
-	commandLoop handle
+	commandLoop1 handle
 
 
+
+processPointerEvent handle [event,x,y] = do
+	n <- get
+	put (255-n)
+	liftIO $ putStrLn ("Mouse Pressed" ++ (show n) ++ "\n")
 
 processSetPixelFormat (bpp:
 	depth:
@@ -47,16 +63,16 @@ processSetEncodings handle [count] = do
 	return ()
 
 
-xxx 0 = return ()
-xxx n = do
+xxx 0 _= return ()
+xxx n c= do
 	putWord8 0 -- dummy
-	putWord8 0 -- red
-	putWord8 0 -- green
-	putWord8 255   -- blue
-	xxx (n-1)
+	putWord8 c -- red
+	putWord8 c -- green
+	putWord8 c   -- blue
+	xxx (n-1) c
 
-blueScreen :: Int -> Int -> Int -> Int -> BS.ByteString
-blueScreen x y width height = runPut $ do
+blueScreen :: Int -> Int -> Int -> Int -> Word8 -> BS.ByteString
+blueScreen x y width height n = runPut $ do
 	putWord8 0
 	putWord8 0
 	putWord16be 1
@@ -65,10 +81,12 @@ blueScreen x y width height = runPut $ do
 	putWord16be (fromIntegral width)
 	putWord16be (fromIntegral height)
 	putWord32be 0
-	xxx (width*height)
+	xxx (width*height) n
 	
 
 processFrameBufferUpdateRequest handle [x,y,width,height] = do
-	putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
-	BS.hPutStr handle (blueScreen x y width height)
+	--liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
+	n <- get
+	--put (255-n)
+	liftIO $ BS.hPutStr handle (blueScreen x y width height (fromIntegral n))
 
