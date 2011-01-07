@@ -65,10 +65,10 @@ processSetEncodings handle [count] = do
 
 xxx 0 _= return ()
 xxx n c= do
-	putWord8 0 -- dummy
-	putWord8 c -- red
+	putWord8 c -- blue
 	putWord8 c -- green
-	putWord8 c   -- blue
+	putWord8 c -- red
+	putWord8 0   -- dummy
 	xxx (n-1) c
 
 blueScreen :: Int -> Int -> Int -> Int -> Word8 -> BS.ByteString
