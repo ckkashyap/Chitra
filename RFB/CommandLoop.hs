@@ -2,21 +2,23 @@ module RFB.CommandLoop (commandLoop) where
 
 import System.IO
 import qualified Data.ByteString.Lazy as BS
-import qualified Data.ByteString.Lazy.Char8 as B
+--import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Word
 
 import qualified RFB.ClientToServer as RFBClient
+import qualified RFB.Encoding as Encoding
 
 import Control.Monad.State
 
-type MyState a = StateT Int IO a
+
+type MyState a = StateT Encoding.RFBState  IO a
 
 commandLoop :: Handle -> IO ()
 commandLoop h = do
-	runStateT (commandLoop1 h) 0
+	runStateT (commandLoop1 h) (Encoding.initState 100 100)
 	return ()
 
 
@@ -27,20 +29,26 @@ commandLoop1 handle = do
 	byteStream <- liftIO $ BS.hGet handle (RFBClient.bytesToRead command)
 	let commandData = RFBClient.parseCommandByteString byteStream command
 	case command of
-		0 -> liftIO $ processSetPixelFormat commandData
+		0 -> processSetPixelFormat commandData
 		2 -> liftIO $ processSetEncodings handle commandData 
 		3 -> processFrameBufferUpdateRequest handle commandData
 		5 -> processPointerEvent handle commandData
-		_ -> liftIO $ putStrLn "Some other command"
+		6 -> processClientCutTextEvent handle commandData
+		_ -> liftIO $ putStrLn ("Some other command" ++ (show (fromIntegral command)))
 	
 	commandLoop1 handle
 
 
 
+processClientCutTextEvent handle [length] = do
+	x <- liftIO $ BS.hGet handle length
+	liftIO $ putStrLn (show x)
+
+	
+
+
 processPointerEvent handle [event,x,y] = do
-	n <- get
-	put (255-n)
-	liftIO $ putStrLn ("Mouse Pressed" ++ (show n) ++ "\n")
+	liftIO $ putStrLn ("Mouse Pressed " ++ (show event) ++ "(" ++ (show x) ++ ", " ++ (show y) ++ ")")
 
 processSetPixelFormat (bpp:
 	depth:
@@ -52,27 +60,31 @@ processSetPixelFormat (bpp:
 	redShift:
 	greenShift:
 	blueShift:[]) = do
-		putStrLn "SetPixelFormat Command"
-		putStrLn ("BPP = " ++ (show bpp))
+		state <- get
+		let newState=Encoding.setPixelFormat state depth bigEndian redMax greenMax blueMax redShift greenShift blueShift
+		put newState
+
 
 
 processSetEncodings handle [count] = do
 	putStrLn "SetEncodings Command"
 	putStrLn (show count)
 	x <- BS.hGet handle (4*count)
+	let e = runGet (do {x<-getWord32le; return x}) x
+	putStrLn (show e)
 	return ()
 
 
-xxx 0 _= return ()
-xxx n c= do
-	putWord8 c -- blue
-	putWord8 c -- green
-	putWord8 c -- red
+xxx 0 = return ()
+xxx n = do
+	putWord8 0 -- blue
+	putWord8 0 -- green
+	putWord8 0 -- red
 	putWord8 0   -- dummy
-	xxx (n-1) c
+	xxx (n-1)
 
-blueScreen :: Int -> Int -> Int -> Int -> Word8 -> BS.ByteString
-blueScreen x y width height n = runPut $ do
+blueScreen :: Int -> Int -> Int -> Int -> Encoding.RFBState -> BS.ByteString
+blueScreen x y width height state = runPut $ do
 	putWord8 0
 	putWord8 0
 	putWord16be 1
@@ -81,12 +93,13 @@ blueScreen x y width height n = runPut $ do
 	putWord16be (fromIntegral width)
 	putWord16be (fromIntegral height)
 	putWord32be 0
-	xxx (width*height) n
+	Encoding.getImageByteString state
+	return ()
 	
 
 processFrameBufferUpdateRequest handle [x,y,width,height] = do
 	--liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
-	n <- get
-	--put (255-n)
-	liftIO $ BS.hPutStr handle (blueScreen x y width height (fromIntegral n))
+	state <- get
+	--liftIO $ BS.hPutStr handle (Encoding.getImageByteString state)
+	liftIO $ BS.hPutStr handle (blueScreen x y width height state)
 
