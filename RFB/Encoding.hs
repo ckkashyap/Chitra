@@ -1,4 +1,4 @@
-module RFB.Encoding (RFBState,initState,getImageByteString,setPixelFormat) where
+module RFB.Encoding (RFBState,initState,getImageByteString,setPixelFormat,putPixel) where
 
 import qualified Data.ByteString.Lazy as BS
 import Data.Binary.Get
@@ -34,21 +34,8 @@ initState width height = RFBState imageData pixelFormat
 
 setPixelFormat (RFBState imageData _) bpp bigEndian rm gm bm rs gs bs = RFBState imageData (PixelFormat (int2bpp bpp) bigEndian rm gm bm rs gs bs)
 
-setPixelAtIndex imageData index color = before ++ [color] ++ after
-	where
-		before = take index imageData
-		after = drop (index-1) imageData
-
-
-
 --getImageByteString :: RFBState -> BS.ByteString
 getImageByteString (RFBState imageData (PixelFormat bpp _ _ _ _ _ _ _)) =  encodeImage imageData bpp
-
-buffer 0 = return ()
-buffer n = do
-	putWord8 255
-	buffer (n-1)
-
 
 
 data BitsPerPixel = Bpp8 | Bpp16 | Bpp32 deriving (Show)
@@ -105,3 +92,11 @@ g_shift Bpp32 = 8
 b_shift Bpp8 = 6
 b_shift Bpp16 = 0
 b_shift Bpp32 = 0
+
+
+putPixel (RFBState imageData pf) (x,y) = RFBState newImgeData pf
+	where
+		newImgeData = (take count imageData) ++ [(255,0,0)] ++ (drop (count+1) imageData)
+		count = width*y + x
+		width = 100
+
