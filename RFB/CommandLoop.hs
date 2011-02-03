@@ -48,7 +48,11 @@ processClientCutTextEvent handle [length] = do
 
 
 processPointerEvent handle [event,x,y] = do
-	liftIO $ putStrLn ("Mouse Pressed " ++ (show event) ++ "(" ++ (show x) ++ ", " ++ (show y) ++ ")")
+	--liftIO $ putStrLn ("Mouse Pressed " ++ (show event) ++ "(" ++ (show x) ++ ", " ++ (show y) ++ ")")
+	state <- get
+	let newState=if event == 1 then Encoding.putPixel state (x,y) else state
+	put newState
+
 
 processSetPixelFormat (bpp:
 	depth:
@@ -61,8 +65,11 @@ processSetPixelFormat (bpp:
 	greenShift:
 	blueShift:[]) = do
 		state <- get
-		let newState=Encoding.setPixelFormat state depth bigEndian redMax greenMax blueMax redShift greenShift blueShift
+		let newState=Encoding.setPixelFormat state bpp bigEndian redMax greenMax blueMax redShift greenShift blueShift
 		put newState
+		liftIO $ putStrLn $ "SET PIXEL FORMAT called"
+		liftIO $ putStrLn ( "bpp = " ++ (show bpp) ++ "\ndepth = " ++ (show depth) ++ "\nbig endian = " ++ (show bigEndian) ++ "\ntrueColor = " ++ (show trueColor) ++ "\nRED MAX = " ++ (show redMax) ++ "\nGREEN MAX = " ++ (show greenMax) ++ "\nblueMax = " ++ (show blueMax) ++ "\nred shift = " ++ (show redShift) ++ "\ngreen shift = " ++ (show greenShift) ++ "\nblue shift = " ++ (show blueShift) ++ "\n")
+		return ()
 
 
 
@@ -98,8 +105,7 @@ blueScreen x y width height state = runPut $ do
 	
 
 processFrameBufferUpdateRequest handle [x,y,width,height] = do
-	--liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
+	liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
 	state <- get
-	--liftIO $ BS.hPutStr handle (Encoding.getImageByteString state)
 	liftIO $ BS.hPutStr handle (blueScreen x y width height state)
 
