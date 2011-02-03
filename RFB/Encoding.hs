@@ -12,8 +12,8 @@ type Blue = Int
 type Color  = (Red,Green,Blue)
 
 type ImageData = [Color]
+type ImageDimension = (Int,Int)
 
---type BitsPerPixel = Int
 type BigEndian = Int
 type RedMax = Int
 type GreenMax = Int
@@ -23,19 +23,19 @@ type GreenShift = Int
 type BlueShift = Int
 data PixelFormat = PixelFormat BitsPerPixel BigEndian RedMax GreenMax BlueMax RedShift GreenShift BlueShift
 
-data RFBState = RFBState ImageData PixelFormat
+
+data RFBState = RFBState ImageDimension ImageData PixelFormat 
 
 
-initState width height = RFBState imageData pixelFormat
+initState width height = RFBState (width,height) imageData pixelFormat
 	where
-		imageData = replicate (width*height) (0,0,0)
+		imageData = replicate (width*height) (255,255,255)
 		pixelFormat = PixelFormat (int2bpp 32) 1 255 255 255 0 8 16
 
 
-setPixelFormat (RFBState imageData _) bpp bigEndian rm gm bm rs gs bs = RFBState imageData (PixelFormat (int2bpp bpp) bigEndian rm gm bm rs gs bs)
+setPixelFormat (RFBState dim imageData _) bpp bigEndian rm gm bm rs gs bs = RFBState dim imageData (PixelFormat (int2bpp bpp) bigEndian rm gm bm rs gs bs)
 
---getImageByteString :: RFBState -> BS.ByteString
-getImageByteString (RFBState imageData (PixelFormat bpp _ _ _ _ _ _ _)) =  encodeImage imageData bpp
+getImageByteString (RFBState _ imageData (PixelFormat bpp _ _ _ _ _ _ _)) =  encodeImage imageData bpp
 
 
 data BitsPerPixel = Bpp8 | Bpp16 | Bpp32 deriving (Show)
@@ -94,9 +94,8 @@ b_shift Bpp16 = 0
 b_shift Bpp32 = 0
 
 
-putPixel (RFBState imageData pf) (x,y) = RFBState newImgeData pf
+putPixel (RFBState dim@(width,_) imageData pf) (x,y) = RFBState dim newImgeData pf
 	where
 		newImgeData = (take count imageData) ++ [(255,0,0)] ++ (drop (count+1) imageData)
 		count = width*y + x
-		width = 100
 

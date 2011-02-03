@@ -19,11 +19,11 @@ import qualified RFB.CommandLoop as CommandLoop
 
 
 
-start = do
-	SERVER.serve 100 100 "5900" dummy
+start w h= do
+	SERVER.serve w h "5900" dummy
 
 dummy w h hnd = do
 	Handshake.handshake w h hnd
-	CommandLoop.commandLoop hnd
+	CommandLoop.commandLoop hnd w h
 	
 

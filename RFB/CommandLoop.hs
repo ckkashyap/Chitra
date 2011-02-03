@@ -16,9 +16,9 @@ import Control.Monad.State
 
 type MyState a = StateT Encoding.RFBState  IO a
 
-commandLoop :: Handle -> IO ()
-commandLoop h = do
-	runStateT (commandLoop1 h) (Encoding.initState 100 100)
+commandLoop :: Handle -> Int -> Int -> IO ()
+commandLoop h width height= do
+	runStateT (commandLoop1 h) (Encoding.initState width height)
 	return ()
 
 
