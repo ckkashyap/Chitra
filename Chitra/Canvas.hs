@@ -1,7 +1,5 @@
 module Chitra.Canvas where
 
-import Network.Server
-import Network.Socket
 import Control.Monad
 import System.IO
 

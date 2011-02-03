@@ -1,0 +1,30 @@
+Name:                Chitra
+Version:             0.1
+Synopsis:            Haskell library for platform independent graphics using VNC.
+Homepage:            http://github.com/ckkashyap/Chitra
+-- License:             BSD3    -- ???
+-- License-file:        LICENSE
+Author:              C K Kashyap
+Maintainer:          ckkashyap@gmail.com
+Category:            Graphics
+
+Build-type:          Simple
+
+Cabal-version:       >=1.2
+
+Library
+  Exposed-modules:     Chitra.Canvas,
+                       RFB.ClientToServer,
+                       RFB.Handshake,
+                       RFB.CommandLoop,
+                       RFB.Server
+  Hs-source-dirs:      .\
+  Build-depends:       base >= 4.2 && < 4.3,
+                       binary >= 0.5 && < 0.6,
+                       bytestring >= 0.9 && < 1.0,
+                       network >= 2.2 && < 2.3,
+                       mtl >= 1.1 && < 1.2
+
+Executable Chitra
+  Main-is:             Main.hs
+  Build-depends:       base >= 4.2 && < 4.3
