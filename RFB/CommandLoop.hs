@@ -100,12 +100,15 @@ blueScreen x y width height state = runPut $ do
 	putWord16be (fromIntegral width)
 	putWord16be (fromIntegral height)
 	putWord32be 0
-	Encoding.getImageByteString state
+	Encoding.getImageByteString state x y width height state
 	return ()
 	
 
 processFrameBufferUpdateRequest handle [x,y,width,height] = do
 	liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
 	state <- get
-	liftIO $ BS.hPutStr handle (blueScreen x y width height state)
+	let byteString=(blueScreen x y width height state)
+	liftIO $ BS.hPutStr handle byteString
+	liftIO $ hFlush handle
+	liftIO $ putStrLn ("Wrote " ++ (show $ BS.length byteString) ++ " bytes")
 

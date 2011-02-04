@@ -29,16 +29,24 @@ data RFBState = RFBState ImageDimension ImageData PixelFormat
 
 initState width height = RFBState (width,height) imageData pixelFormat
 	where
-		imageData = replicate (width*height) (120,120,120)
+		imageData = replicate (width*height) (0,0,255)
 		pixelFormat = PixelFormat (int2bpp 32) 1 255 255 255 16 8 0
 
 
 setPixelFormat (RFBState dim imageData _) bpp bigEndian rm gm bm rs gs bs = RFBState dim imageData (PixelFormat (int2bpp bpp) bigEndian rm gm bm rs gs bs)
 
-getImageByteString (RFBState _ imageData (PixelFormat bpp _ _ _ _ _ _ _)) =  encodeImage imageData bpp
+getImageByteString (RFBState _ imageData (PixelFormat bpp _ _ _ _ _ _ _)) x y width height (RFBState (totalWidth,_) _ _) =  encodeImage (clip imageData x y width height totalWidth)  bpp
 
 
 data BitsPerPixel = Bpp8 | Bpp16 | Bpp32 deriving (Show)
+
+
+clip imageData x y width height totalWidth = horizontolClip verticalClip
+	where
+		verticalClip = take (height*totalWidth) (drop (y*totalWidth) imageData)
+		horizontolClip [] = []
+		horizontolClip image = (take width (drop x image)) ++ (horizontolClip (drop totalWidth image))
+
 
 
 encodeImage [] _ = return ()
