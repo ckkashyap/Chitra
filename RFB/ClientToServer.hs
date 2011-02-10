@@ -23,7 +23,7 @@ commandFormat :: Word8 -> [Int] -- 0 for padding bytes
 commandFormat c
 		| c == setPixelFormat	= [0,0,0,1,1,1,1,2,2,2,1,1,1,0,0,0]
 		| c == setEncodings	= [0,2]
-		| c == framebufferUpdateRequest = [0,2,2,2,2]
+		| c == framebufferUpdateRequest = [1,2,2,2,2]
 		| c == keyEvent 	= [1,2,4]
 		| c == pointerEvent	= [1,2,2]
 		| c == clientCutText	= [0,0,0,4]

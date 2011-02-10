@@ -104,8 +104,8 @@ blueScreen x y width height state = runPut $ do
 	return ()
 	
 
-processFrameBufferUpdateRequest handle [x,y,width,height] = do
-	liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height))
+processFrameBufferUpdateRequest handle [inc, x,y,width,height] = do
+	liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height) ++ ", inc=" ++ (show inc))
 	state <- get
 	let byteString=(blueScreen x y width height state)
 	liftIO $ BS.hPutStr handle byteString
