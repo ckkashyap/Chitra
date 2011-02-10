@@ -10,15 +10,16 @@ import Data.Word
 
 import qualified RFB.ClientToServer as RFBClient
 import qualified RFB.Encoding as Encoding
+import qualified RFB.State as RFBState
 
 import Control.Monad.State
 
 
-type MyState a = StateT Encoding.RFBState  IO a
+type MyState a = StateT RFBState.RFBState  IO a
 
 commandLoop :: Handle -> Int -> Int -> IO ()
 commandLoop h width height= do
-	runStateT (commandLoop1 h) (Encoding.initState width height)
+	runStateT (commandLoop1 h) (RFBState.initialState width height)
 	return ()
 
 
@@ -65,7 +66,7 @@ processSetPixelFormat (bpp:
 	greenShift:
 	blueShift:[]) = do
 		state <- get
-		let newState=Encoding.setPixelFormat state bpp bigEndian redMax greenMax blueMax redShift greenShift blueShift
+		let newState=RFBState.setPixelFormat state bpp bigEndian redMax greenMax blueMax redShift greenShift blueShift
 		put newState
 		liftIO $ putStrLn $ "SET PIXEL FORMAT called"
 		liftIO $ putStrLn ( "bpp = " ++ (show bpp) ++ "\ndepth = " ++ (show depth) ++ "\nbig endian = " ++ (show bigEndian) ++ "\ntrueColor = " ++ (show trueColor) ++ "\nRED MAX = " ++ (show redMax) ++ "\nGREEN MAX = " ++ (show greenMax) ++ "\nblueMax = " ++ (show blueMax) ++ "\nred shift = " ++ (show redShift) ++ "\ngreen shift = " ++ (show greenShift) ++ "\nblue shift = " ++ (show blueShift) ++ "\n")
@@ -90,7 +91,7 @@ xxx n = do
 	putWord8 0   -- dummy
 	xxx (n-1)
 
-blueScreen :: Int -> Int -> Int -> Int -> Encoding.RFBState -> BS.ByteString
+blueScreen :: Int -> Int -> Int -> Int -> RFBState.RFBState -> BS.ByteString
 blueScreen x y width height state = runPut $ do
 	putWord8 0
 	putWord8 0
