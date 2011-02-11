@@ -1,8 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module RFB.CommandLoop (commandLoop) where
 
 import System.IO
 import qualified Data.ByteString.Lazy as BS
---import qualified Data.ByteString.Lazy.Char8 as B
+
 import Data.Char
 import Data.Binary.Get
 import Data.Binary.Put
@@ -28,7 +29,10 @@ commandLoop1 handle = do
 	commandByte <- liftIO$ BS.hGet handle 1
 	let command = RFBClient.word8ToCommand $ runGet (do {x<-getWord8;return(x);}) commandByte
 	byteStream <- liftIO $ BS.hGet handle (RFBClient.bytesToRead command)
-	let commandData = RFBClient.parseCommandByteString byteStream command
+	let commandData = RFBClient.getCommandData byteStream command
+	--let commandData = RFBClient.parseCommandByteString byteStream command
+	liftIO $ putStrLn $ "Client said -> " ++ (show command)
+	liftIO $ putStrLn (show commandData)
 	case command of
 		RFBClient.SetPixelFormat -> processSetPixelFormat commandData
 		RFBClient.SetEncodings -> liftIO $ processSetEncodings handle commandData 
@@ -40,55 +44,34 @@ commandLoop1 handle = do
 
 
 
-processClientCutTextEvent handle [length] = do
+processClientCutTextEvent handle (RFBClient.ClientCutTextData length) = do
 	x <- liftIO $ BS.hGet handle length
 	liftIO $ putStrLn (show x)
 
 	
 
 
-processPointerEvent handle [event,x,y] = do
-	--liftIO $ putStrLn ("Mouse Pressed " ++ (show event) ++ "(" ++ (show x) ++ ", " ++ (show y) ++ ")")
+processPointerEvent handle (RFBClient.PointerEventData buttonMask x y)= do
 	state <- get
-	let newState=if event == 1 then Encoding.putPixel state (x,y) else state
+	let newState=if buttonMask == 1 then Encoding.putPixel state (x,y) else state
 	put newState
 
 
-processSetPixelFormat (bpp:
-	depth:
-	bigEndian:
-	trueColor:
-	redMax:
-	greenMax:
-	blueMax:
-	redShift:
-	greenShift:
-	blueShift:[]) = do
+processSetPixelFormat (RFBClient.SetPixelFormatData bitsPerPixel depth bigEndian trueColor redMax greenMax blueMax redShift greenShift blueShift)
+	= do
 		state <- get
-		let newState=RFBState.setPixelFormat state bpp bigEndian redMax greenMax blueMax redShift greenShift blueShift
+		let newState=RFBState.setPixelFormat state bitsPerPixel bigEndian redMax greenMax blueMax redShift greenShift blueShift
 		put newState
-		liftIO $ putStrLn $ "SET PIXEL FORMAT called"
-		liftIO $ putStrLn ( "bpp = " ++ (show bpp) ++ "\ndepth = " ++ (show depth) ++ "\nbig endian = " ++ (show bigEndian) ++ "\ntrueColor = " ++ (show trueColor) ++ "\nRED MAX = " ++ (show redMax) ++ "\nGREEN MAX = " ++ (show greenMax) ++ "\nblueMax = " ++ (show blueMax) ++ "\nred shift = " ++ (show redShift) ++ "\ngreen shift = " ++ (show greenShift) ++ "\nblue shift = " ++ (show blueShift) ++ "\n")
 		return ()
 
 
 
-processSetEncodings handle [count] = do
-	putStrLn "SetEncodings Command"
-	putStrLn (show count)
+processSetEncodings handle (RFBClient.SetEncodingsData count) = do
 	x <- BS.hGet handle (4*count)
 	let e = runGet (do {x<-getWord32le; return x}) x
 	putStrLn (show e)
 	return ()
 
-
-xxx 0 = return ()
-xxx n = do
-	putWord8 0 -- blue
-	putWord8 0 -- green
-	putWord8 0 -- red
-	putWord8 0   -- dummy
-	xxx (n-1)
 
 blueScreen :: Int -> Int -> Int -> Int -> RFBState.RFBState -> BS.ByteString
 blueScreen x y width height state = runPut $ do
@@ -104,8 +87,7 @@ blueScreen x y width height state = runPut $ do
 	return ()
 	
 
-processFrameBufferUpdateRequest handle [inc, x,y,width,height] = do
-	liftIO $ putStrLn ("FrameBufferUpdateRequest x=" ++ (show x) ++ ", y=" ++ (show y) ++ " width =" ++ (show width) ++ ", height=" ++ (show height) ++ ", inc=" ++ (show inc))
+processFrameBufferUpdateRequest handle (RFBClient.FramebufferUpdateData incremental x y width height) = do
 	state <- get
 	let byteString=(blueScreen x y width height state)
 	liftIO $ BS.hPutStr handle byteString
