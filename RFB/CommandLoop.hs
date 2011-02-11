@@ -26,17 +26,16 @@ commandLoop h width height= do
 commandLoop1 :: Handle -> MyState ()
 commandLoop1 handle = do
 	commandByte <- liftIO$ BS.hGet handle 1
-	let command = runGet (do {x<-getWord8;return(x);}) commandByte
+	let command = RFBClient.word8ToCommand $ runGet (do {x<-getWord8;return(x);}) commandByte
 	byteStream <- liftIO $ BS.hGet handle (RFBClient.bytesToRead command)
 	let commandData = RFBClient.parseCommandByteString byteStream command
 	case command of
-		0 -> processSetPixelFormat commandData
-		2 -> liftIO $ processSetEncodings handle commandData 
-		3 -> processFrameBufferUpdateRequest handle commandData
-		5 -> processPointerEvent handle commandData
-		6 -> processClientCutTextEvent handle commandData
-		_ -> liftIO $ putStrLn ("Some other command" ++ (show (fromIntegral command)))
-	
+		RFBClient.SetPixelFormat -> processSetPixelFormat commandData
+		RFBClient.SetEncodings -> liftIO $ processSetEncodings handle commandData 
+		RFBClient.FramebufferUpdate -> processFrameBufferUpdateRequest handle commandData
+		RFBClient.PointerEvent -> processPointerEvent handle commandData
+		RFBClient.ClientCutText -> processClientCutTextEvent handle commandData
+		RFBClient.BadCommand -> liftIO $ putStrLn (show command)
 	commandLoop1 handle
 
 

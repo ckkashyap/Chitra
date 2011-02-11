@@ -1,33 +1,24 @@
-module RFB.ClientToServer where
+module RFB.ClientToServer (ClientCommand ( SetPixelFormat , SetEncodings , FramebufferUpdate , KeyEvent , PointerEvent , ClientCutText , BadCommand ),bytesToRead,parseCommandByteString,word8ToCommand) where
 
 import Data.Word
 
 import qualified Utilities.ParseByteString as PBS
 
 
--- Client to Server messages
-setPixelFormat                  = 0 :: Word8
-setEncodings                    = 2 :: Word8
-framebufferUpdateRequest        = 3 :: Word8
-keyEvent                        = 4 :: Word8
-pointerEvent                    = 5 :: Word8
-clientCutText                   = 6 :: Word8
+data ClientCommand = SetPixelFormat | SetEncodings | FramebufferUpdate | KeyEvent | PointerEvent | ClientCutText | BadCommand deriving (Show)
 
-
-bytesToRead :: Word8 -> Int
+bytesToRead :: ClientCommand -> Int
 bytesToRead c = foldr (+) 0 (map (\x -> if x == 0 then 1 else x) (commandFormat c))
 
-
-
-commandFormat :: Word8 -> [Int] -- 0 for padding bytes
-commandFormat c
-		| c == setPixelFormat	= [0,0,0,1,1,1,1,2,2,2,1,1,1,0,0,0]
-		| c == setEncodings	= [0,2]
-		| c == framebufferUpdateRequest = [1,2,2,2,2]
-		| c == keyEvent 	= [1,2,4]
-		| c == pointerEvent	= [1,2,2]
-		| c == clientCutText	= [0,0,0,4]
-		| otherwise		= []
+commandFormat :: ClientCommand -> [Int] -- 0 for padding bytes
+commandFormat c = case c of
+		SetPixelFormat		-> [0,0,0,1,1,1,1,2,2,2,1,1,1,0,0,0]
+		SetEncodings		-> [0,2]
+		FramebufferUpdate	-> [1,2,2,2,2]
+		KeyEvent		-> [1,2,4]
+		PointerEvent		-> [1,2,2]
+		ClientCutText		-> [0,0,0,4]
+		BadCommand		-> []
 
 
 parseCommandByteString byteString command =
@@ -35,3 +26,13 @@ parseCommandByteString byteString command =
 		where 
 			list = (commandFormat command)
 
+
+word8ToCommand :: Word8 -> ClientCommand
+word8ToCommand w = case w of
+	0 -> SetPixelFormat
+	2 -> SetEncodings
+	3 -> FramebufferUpdate
+	4 -> KeyEvent
+	5 -> PointerEvent
+	6 -> ClientCutText
+	_ -> BadCommand
