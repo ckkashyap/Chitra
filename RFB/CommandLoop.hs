@@ -83,8 +83,11 @@ blueScreen x y width height state = runPut $ do
 	putWord16be (fromIntegral width)
 	putWord16be (fromIntegral height)
 	putWord32be 0
-	Encoding.getImageByteString state x y width height state
+	Encoding.getImageByteString state x y width height
 	return ()
+
+
+
 	
 
 processFrameBufferUpdateRequest handle (RFBClient.FramebufferUpdateData incremental x y width height) = do
@@ -92,5 +95,4 @@ processFrameBufferUpdateRequest handle (RFBClient.FramebufferUpdateData incremen
 	let byteString=(blueScreen x y width height state)
 	liftIO $ BS.hPutStr handle byteString
 	liftIO $ hFlush handle
-	liftIO $ putStrLn ("Wrote " ++ (show $ BS.length byteString) ++ " bytes")
 

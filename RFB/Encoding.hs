@@ -9,7 +9,7 @@ import Data.Bits
 import qualified RFB.State as RFBState
 
 
-getImageByteString (RFBState.RFBState _ imageData (RFBState.PixelFormat bpp _ _ _ _ _ _ _)) x y width height (RFBState.RFBState (totalWidth,_) _ _) =  encodeImage (clip imageData x y width height totalWidth)  bpp
+getImageByteString (RFBState.RFBState (totalWidth,_) imageData (RFBState.PixelFormat bpp _ _ _ _ _ _ _) updateList) x y width height =  encodeImage (clip imageData x y width height totalWidth) bpp
 
 
 
@@ -47,7 +47,7 @@ encode (r,g,b) bitsPerPixel = do
 
 
 
-putPixel (RFBState.RFBState dim@(width,_) imageData pf) (x,y) = RFBState.RFBState dim newImgeData pf
+putPixel (RFBState.RFBState dim@(width,_) imageData pf updateList) (x,y) = RFBState.RFBState dim newImgeData pf updateList
 	where
 		newImgeData = (take count imageData) ++ [(255,255,255)] ++ (drop (count+1) imageData)
 		count = width*y + x
