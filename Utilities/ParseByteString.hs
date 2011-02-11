@@ -3,6 +3,7 @@ module Utilities.ParseByteString (parseByteString) where
 import Control.Applicative ((<$>))
 import Data.Word
 import Data.Binary.Get
+import qualified Data.ByteString.Lazy as BS
 
 data Action m = A1 (m Word8) | A2 (m Word16) | A4 (m Word32)
 
@@ -28,6 +29,7 @@ toVal (A1 (Id v)) = fromIntegral v :: Int
 toVal (A2 (Id v)) = fromIntegral v :: Int
 toVal (A4 (Id v)) = fromIntegral v :: Int
 
+parseByteString :: (Num a) => [a] -> BS.ByteString -> [Int]
 parseByteString list byteString = cleanup solution
 		where 
 			cleanup list1 = map snd . filter ((/= 0) . fst) $ zip list list1

@@ -1,8 +1,23 @@
-module RFB.ClientToServer (ClientCommand ( SetPixelFormat , SetEncodings , FramebufferUpdate , KeyEvent , PointerEvent , ClientCutText , BadCommand ),bytesToRead,parseCommandByteString,word8ToCommand) where
+module RFB.ClientToServer (
+	ClientCommand
+	(
+		SetPixelFormat ,
+		SetEncodings ,
+		FramebufferUpdate ,
+		KeyEvent ,
+		PointerEvent ,
+		ClientCutText ,
+		BadCommand
+	),
+	bytesToRead,
+	parseCommandByteString,
+	word8ToCommand
+) where
 
 import Data.Word
 
 import qualified Utilities.ParseByteString as PBS
+import qualified Data.ByteString.Lazy as BS
 
 
 data ClientCommand = SetPixelFormat | SetEncodings | FramebufferUpdate | KeyEvent | PointerEvent | ClientCutText | BadCommand deriving (Show)
@@ -21,6 +36,7 @@ commandFormat c = case c of
 		BadCommand		-> []
 
 
+parseCommandByteString :: BS.ByteString -> ClientCommand -> [Int]
 parseCommandByteString byteString command =
 	PBS.parseByteString list byteString
 		where 
