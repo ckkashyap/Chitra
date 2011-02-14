@@ -1,4 +1,4 @@
-module RFB.Encoding (getImageByteString,putPixel) where
+module RFB.Encoding (getImageByteString,putPixel,encodeRectagles) where
 
 import qualified Data.ByteString.Lazy as BS
 import Data.Binary.Get
@@ -28,8 +28,6 @@ encodeImage ((r,g,b):xs) bpp = do
 	encodeImage xs bpp
 
 
---int2bpp :: Int -> BitsPerPixel
-
 
 encode (r,g,b) bitsPerPixel = do
 	case bitsPerPixel of
@@ -46,8 +44,23 @@ encode (r,g,b) bitsPerPixel = do
 		scale c cm cs = (c * cm `div` 255) `shift` cs
 
 
+encodeRectagles _ []  = return ()
+encodeRectagles bpp ((RFBState.Rectangle x y w h):xs) = do
+	putWord16be (fromIntegral x)
+	putWord16be (fromIntegral y)
+	putWord16be (fromIntegral w)
+	putWord16be (fromIntegral h)
+	putWord32be 0
+	encode (r,g,b) bpp
+	encodeRectagles bpp xs
+		where
+			r = 255 :: Word8
+			g = 255 :: Word8
+			b = 255 :: Word8
 
-putPixel (RFBState.RFBState dim@(width,_) imageData pf updateList) (x,y) = RFBState.RFBState dim newImgeData pf updateList
+
+
+putPixel (RFBState.RFBState dim@(width,_) imageData pf updateList) (x,y) = RFBState.RFBState dim newImgeData pf ((RFBState.Rectangle x y 1 1):updateList)
 	where
 		newImgeData = (take count imageData) ++ [(255,255,255)] ++ (drop (count+1) imageData)
 		count = width*y + x

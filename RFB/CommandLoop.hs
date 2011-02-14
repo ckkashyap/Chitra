@@ -52,9 +52,15 @@ processClientCutTextEvent handle (RFBClient.ClientCutTextData length) = do
 
 
 processPointerEvent handle (RFBClient.PointerEventData buttonMask x y)= do
-	state <- get
+	state@(RFBState.RFBState d i p u) <- get
 	let newState=if buttonMask == 1 then Encoding.putPixel state (x,y) else state
 	put newState
+	if (length u) > 0 then do
+			liftIO $ BS.hPutStr handle (updateRectangles state)
+			liftIO $ hFlush handle
+		else 
+			return ()
+
 
 
 processSetPixelFormat (RFBClient.SetPixelFormatData bitsPerPixel depth bigEndian trueColor redMax greenMax blueMax redShift greenShift blueShift)
@@ -73,8 +79,8 @@ processSetEncodings handle (RFBClient.SetEncodingsData count) = do
 	return ()
 
 
-blueScreen :: Int -> Int -> Int -> Int -> RFBState.RFBState -> BS.ByteString
-blueScreen x y width height state = runPut $ do
+fullScreen :: Int -> Int -> Int -> Int -> RFBState.RFBState -> BS.ByteString
+fullScreen x y width height state = runPut $ do
 	putWord8 0
 	putWord8 0
 	putWord16be 1
@@ -88,11 +94,32 @@ blueScreen x y width height state = runPut $ do
 
 
 
+updateRectangles state@(RFBState.RFBState _ _ (RFBState.PixelFormat bpp _ _ _ _ _ _ _) updateList) = runPut $ do
+	putWord8 0
+	putWord8 0
+	putWord16be (fromIntegral (length updateList))
+	Encoding.encodeRectagles bpp updateList
+	return ()
+
+
+
 	
 
-processFrameBufferUpdateRequest handle (RFBClient.FramebufferUpdateData incremental x y width height) = do
-	state <- get
-	let byteString=(blueScreen x y width height state)
+processFrameBufferUpdateRequest handle (RFBClient.FramebufferUpdateData incremental x y width height) = do -- this produces black
+	state@(RFBState.RFBState d i p u) <- get
+	let byteString=if incremental == 0 then fullScreen x y width height state else updateRectangles state
+	let newState = if incremental == 0 then state else RFBState.RFBState d i p []
+	put newState
+	liftIO $ putStrLn (show u)
 	liftIO $ BS.hPutStr handle byteString
 	liftIO $ hFlush handle
 
+
+processFrameBufferUpdateRequest' handle (RFBClient.FramebufferUpdateData incremental x y width height) = do -- this produces white
+	state@(RFBState.RFBState d i p u) <- get
+	let byteString=fullScreen x y width height state
+	let newState = if incremental == 0 then state else RFBState.RFBState d i p []
+	put newState
+	liftIO $ putStrLn (show u)
+	liftIO $ BS.hPutStr handle byteString
+	liftIO $ hFlush handle
