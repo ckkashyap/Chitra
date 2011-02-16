@@ -39,6 +39,7 @@ commandLoop1 handle = do
 		RFBClient.FramebufferUpdate -> processFrameBufferUpdateRequest handle commandData
 		RFBClient.PointerEvent -> processPointerEvent handle commandData
 		RFBClient.ClientCutText -> processClientCutTextEvent handle commandData
+		RFBClient.KeyEvent -> processKeyEvent handle commandData
 		RFBClient.BadCommand -> liftIO $ putStrLn (show command)
 	commandLoop1 handle
 
@@ -50,14 +51,19 @@ processClientCutTextEvent handle (RFBClient.ClientCutTextData length) = do
 
 	
 
+processKeyEvent handle commandData = do
+	return ()
 
 processPointerEvent handle (RFBClient.PointerEventData buttonMask x y)= do
-	state@(RFBState.RFBState d i p u) <- get
+	state@(RFBState.RFBState d i p pend u) <- get
 	let newState=if buttonMask == 1 then Encoding.putPixel state (x,y) else state
 	put newState
-	if (length u) > 0 then do
+	if pend && ((length u) > 0) then do
+			liftIO $ putStrLn $ "Updating -> " ++ (show u)
 			liftIO $ BS.hPutStr handle (updateRectangles state)
 			liftIO $ hFlush handle
+			put (RFBState.RFBState d i p False [])
+			return ()
 		else 
 			return ()
 
@@ -94,32 +100,30 @@ fullScreen x y width height state = runPut $ do
 
 
 
-updateRectangles state@(RFBState.RFBState _ _ (RFBState.PixelFormat bpp _ _ _ _ _ _ _) updateList) = runPut $ do
+updateRectangles state@(RFBState.RFBState _ _ (RFBState.PixelFormat bpp _ _ _ _ _ _ _) pend updateList) = runPut $ do
 	putWord8 0
 	putWord8 0
 	putWord16be (fromIntegral (length updateList))
 	Encoding.encodeRectagles bpp updateList
 	return ()
 
+empty = runPut $ return ()
 
 
 	
 
 processFrameBufferUpdateRequest handle (RFBClient.FramebufferUpdateData incremental x y width height) = do -- this produces black
-	state@(RFBState.RFBState d i p u) <- get
-	let byteString=if incremental == 0 then fullScreen x y width height state else updateRectangles state
-	let newState = if incremental == 0 then state else RFBState.RFBState d i p []
+	state@(RFBState.RFBState d i p pend u) <- get
+	let byteString=if incremental == 0 then fullScreen x y width height state else (if (length u > 0) then updateRectangles state else empty)
+	--let newState = if incremental == 0 then state else RFBState.RFBState d i p pend []
+	let newState = if incremental == 0 then RFBState.RFBState d i p False [] else RFBState.RFBState d i p (if (length u > 0) then False else True) [] 
 	put newState
-	liftIO $ putStrLn (show u)
+ 	(RFBState.RFBState _ _ _ newPend _) <- get
+	liftIO $ putStrLn (show pend)
+	liftIO $ putStrLn (show newPend)
+	--liftIO $ putStrLn (show state)
+	--liftIO $ putStrLn (show newState)
 	liftIO $ BS.hPutStr handle byteString
 	liftIO $ hFlush handle
 
 
-processFrameBufferUpdateRequest' handle (RFBClient.FramebufferUpdateData incremental x y width height) = do -- this produces white
-	state@(RFBState.RFBState d i p u) <- get
-	let byteString=fullScreen x y width height state
-	let newState = if incremental == 0 then state else RFBState.RFBState d i p []
-	put newState
-	liftIO $ putStrLn (show u)
-	liftIO $ BS.hPutStr handle byteString
-	liftIO $ hFlush handle

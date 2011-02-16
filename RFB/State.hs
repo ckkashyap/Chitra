@@ -29,20 +29,22 @@ type RedShift = Int
 type GreenShift = Int
 type BlueShift = Int
 
+type FrameBufferUpdatePending = Bool
+
 data BitsPerPixel = Bpp8 | Bpp16 | Bpp32 deriving (Show)
 
 data PixelFormat = PixelFormat BitsPerPixel BigEndian RedMax GreenMax BlueMax RedShift GreenShift BlueShift deriving (Show)
 
 data Rectangle = Rectangle Int Int Int Int deriving (Show)
 
-data RFBState = RFBState ImageDimension ImageData PixelFormat [Rectangle] deriving(Show)
+data RFBState = RFBState ImageDimension ImageData PixelFormat FrameBufferUpdatePending [Rectangle] deriving(Show)
 
-initialState width height = RFBState (width,height) imageData pixelFormat [Rectangle 10 10 1 1]
+initialState width height = RFBState (width,height) imageData pixelFormat False []
 	where
 		imageData = replicate (width*height) (0,0,255)
 		pixelFormat = PixelFormat Bpp32 1 255 255 255 16 8 0
 
-setPixelFormat (RFBState dim imageData _ updateList) bpp bigEndian rm gm bm rs gs bs = RFBState dim imageData (PixelFormat (int2bpp bpp) bigEndian rm gm bm rs gs bs) updateList
+setPixelFormat (RFBState dim imageData _ pending updateList) bpp bigEndian rm gm bm rs gs bs = RFBState dim imageData (PixelFormat (int2bpp bpp) bigEndian rm gm bm rs gs bs) pending updateList
 
 int2bpp i
 	| i == 8 = Bpp8
