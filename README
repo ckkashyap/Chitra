@@ -12,9 +12,10 @@ the RDP protocol that even has support for sound.
 
 To try out -
 
-Just do a make and you should have the executable *Main* created. Run ./Main
-and try connecting a vnc client to localhost:5900 - typically, that would be
+Just do a make and you should have the executable *Main* created. 
+
+Run ./Main <width> <height> <port> 
+
+Now try connecting a vnc client to localhost:5900 - typically, that would be
 vnc://localhost
 
-The port number and the dimensions of the screen are hardcoded in
-Chitra/Canvas.hs
