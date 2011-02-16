@@ -54,9 +54,9 @@ encodeRectagles bpp ((RFBState.Rectangle x y w h):xs) = do
 	encode (r,g,b) bpp
 	encodeRectagles bpp xs
 		where
-			r = 255 :: Word8
-			g = 255 :: Word8
-			b = 255 :: Word8
+			r = 255 :: Word32
+			g = 255 :: Word32
+			b = 255 :: Word32
 
 
 
